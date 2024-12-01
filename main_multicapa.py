@@ -13,9 +13,14 @@ import os
 file_path = "resultados_multicapa.csv"
 file_exists = os.path.isfile(file_path)
 
-epochs_g = 25
-batch_size_g = 64
+epochs_g = 20
+batch_size_g = 32
 learning_rate_g = 0.001
+activation_g = 'sigmoid'
+kernel_initializer_logic_units_g = 'lecun_uniform'
+kernel_initializer_exit_g = 'glorot_uniform'
+patience_g = 5
+early_stop = 'yes'
 
 train_images, train_labels = load_train_data()
 test_images, test_labels = load_evaluate_data()
@@ -27,15 +32,15 @@ test_labels = to_categorical(test_labels, num_classes=10)
 model = Sequential([
     tf.keras.layers.Input(shape=(28, 28)),
     Flatten(),
-    Dense(256, activation='sigmoid', kernel_initializer='lecun_uniform'),
-    Dense(10, activation='softmax', kernel_initializer='glorot_uniform')
+    Dense(256, activation=activation_g, kernel_initializer=kernel_initializer_logic_units_g),
+    Dense(10, activation='softmax', kernel_initializer=kernel_initializer_exit_g)
 ])
 
 model.compile(optimizer=Adam(learning_rate=learning_rate_g),
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-early_stopping = EarlyStopping(monitor='val_loss', patience=4, restore_best_weights=True)
+early_stopping = EarlyStopping(monitor='val_loss', patience=patience_g)
 
 model.fit(train_images, train_labels,
           epochs=epochs_g,
@@ -52,8 +57,8 @@ error_train = 100 - (accuracy_train * 100)
 with open(file_path, mode='a', newline='', encoding='utf-8') as file:
     writer = csv.writer(file, delimiter=';')
     if not file_exists:
-        writer.writerow(["epochs", "batch_size", "learning_rate", "loss_train", "accuracy_train", "error_train", "loss_test", "accuracy_test", "error_test", "activation_hidden"])
-    writer.writerow([epochs_g, batch_size_g, learning_rate_g, loss_train, accuracy_train * 100, error_train, loss_test, accuracy_test * 100, error_test, "sigmoid"])
+        writer.writerow(["epochs", "batch_size", "learning_rate", "loss_train", "accuracy_train", "error_train", "loss_test", "accuracy_test", "error_test", "activation_hidden", "kernel_initializer", "kernel_initializer_exit",  "early_stop" ,"patience"])
+    writer.writerow([epochs_g, batch_size_g, learning_rate_g, loss_train, accuracy_train * 100, error_train, loss_test, accuracy_test * 100, error_test, activation_g, kernel_initializer_logic_units_g, kernel_initializer_exit_g, early_stop, patience_g])
 
 print(f"Tasa de error en el conjunto de prueba: {error_test:.2f}%")
 print(f"Tasa de error en el conjunto de entrenamiento: {error_train:.2f}%")
