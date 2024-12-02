@@ -60,5 +60,7 @@ with open(file_path, mode='a', newline='', encoding='utf-8') as file:
         writer.writerow(["epochs", "batch_size", "learning_rate", "loss_train", "accuracy_train", "error_train", "loss_test", "accuracy_test", "error_test", "activation_hidden", "kernel_initializer", "kernel_initializer_exit",  "early_stop" ,"patience"])
     writer.writerow([epochs_g, batch_size_g, learning_rate_g, loss_train, accuracy_train * 100, error_train, loss_test, accuracy_test * 100, error_test, activation_g, kernel_initializer_logic_units_g, kernel_initializer_exit_g, early_stop, patience_g])
 
+model.save('model_multicapa.h5')
+
 print(f"Tasa de error en el conjunto de prueba: {error_test:.2f}%")
 print(f"Tasa de error en el conjunto de entrenamiento: {error_train:.2f}%")

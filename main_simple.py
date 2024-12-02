@@ -18,7 +18,7 @@ batch_size_g=32
 learning_rate_g = 0.001
 activation_g = 'softmax'
 kernel_initializer_g = 'glorot_uniform'
-patience_g = 4
+patience_g = 3
 early_stop = 'yes'
 
 train_images, train_labels = load_train_data()
@@ -60,6 +60,8 @@ with open(file_path, mode='a', newline='', encoding='utf-8') as file:
     if not file_exists:
         writer.writerow(["epochs", "batch_size", "learning_rate", "loss_train", "accuracy_train", "error_train", "loss_test", "accuracy_test", "error_test", "activation", "kernel_initializer", "patience", "early_stop"])
     writer.writerow([epochs_g, batch_size_g, learning_rate_g, loss_train, accuracy_train * 100, error_train, loss_test, accuracy_test * 100, error_test, activation_g, kernel_initializer_g, patience_g, early_stop])
+
+model.save('model_simple_2.h5')
 
 print(f"Tasa de error en el conjunto de prueba: {error_test:.2f}%")
 print(f"Tasa de error en el conjunto de entrenamiento: {error_train:.2f}%")
