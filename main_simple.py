@@ -4,23 +4,18 @@ from tensorflow.keras.layers import Flatten, Dense
 from tensorflow.keras.utils import to_categorical
 from src.read import load_train_data, load_evaluate_data
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import Dropout
-from tensorflow.keras.initializers import HeNormal
-import csv
-import os
+from tensorflow.keras.callbacks import EarlyStopping, Callback
+import numpy as np
+from openpyxl import Workbook
 
-file_path = "resultados_simple.csv"
-file_exists = os.path.isfile(file_path)
-
+# Hiperparámetros
 epochs_g = 20
-batch_size_g=32
+batch_size_g = 32
 learning_rate_g = 0.001
 activation_g = 'softmax'
-kernel_initializer_g = 'glorot_uniform'
 patience_g = 3
-early_stop = 'yes'
 
+# Cargar datos
 train_images, train_labels = load_train_data()
 test_images, test_labels = load_evaluate_data()
 
@@ -30,38 +25,65 @@ test_images = test_images / 255.0
 train_labels = to_categorical(train_labels, num_classes=10)
 test_labels = to_categorical(test_labels, num_classes=10)
 
+# Dividir el conjunto de entrenamiento en 80% para entrenamiento y 20% para validación
+validation_percentage = 0.2
+indices = np.arange(train_images.shape[0])
+np.random.shuffle(indices)
+validation_size = int(validation_percentage * train_images.shape[0])
+
+val_indices = indices[:validation_size]
+train_indices = indices[validation_size:]
+
+train_images_split = train_images[train_indices]
+train_labels_split = train_labels[train_indices]
+
+val_images_split = train_images[val_indices]
+val_labels_split = train_labels[val_indices]
+
+class TestSetEvaluationCallback(Callback):
+    def __init__(self, test_images, test_labels, file_path):
+        self.test_images = test_images
+        self.test_labels = test_labels
+        self.file_path = file_path
+        self.epoch_data = []
+
+    def on_epoch_end(self, epoch, logs=None):
+        loss_test, accuracy_test = self.model.evaluate(self.test_images, self.test_labels, verbose=0)
+        self.epoch_data.append((epoch + 1, accuracy_test, loss_test))
+
+    def on_train_end(self, logs=None):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Resultados"
+        ws.append(["Época", "Accuracy", "Loss"])
+        for data in self.epoch_data:
+            ws.append(data)
+        wb.save(self.file_path)
+
 model = Sequential([
     tf.keras.layers.Input(shape=(28, 28)),
     Flatten(),
-    Dense(10, activation=activation_g)
+    Dense(10, activation=activation_g, kernel_initializer='glorot_uniform')
 ])
 
 model.compile(optimizer=Adam(learning_rate=learning_rate_g),
               loss='categorical_crossentropy', 
               metrics=['accuracy'])
 
- 
 early_stopping = EarlyStopping(monitor='val_loss', patience=patience_g)
+test_eval_callback = TestSetEvaluationCallback(test_images, test_labels, "grafica_simple.xlsx")
 
-model.fit(train_images, train_labels, 
+model.fit(train_images_split, train_labels_split, 
           epochs=epochs_g, 
           batch_size=batch_size_g, 
-          validation_data=(test_images, test_labels),
-          callbacks=[early_stopping])
+          validation_data=(val_images_split, val_labels_split),
+          callbacks=[early_stopping, test_eval_callback])
 
 loss_test, accuracy_test = model.evaluate(test_images, test_labels)
-loss_train, accuracy_train = model.evaluate(train_images, train_labels)
+loss_train, accuracy_train = model.evaluate(train_images_split, train_labels_split)
 
 error_test = 100 - (accuracy_test * 100)
 error_train = 100 - (accuracy_train * 100)
-
-with open(file_path, mode='a', newline='', encoding='utf-8') as file:
-    writer = csv.writer(file, delimiter=';')
-    if not file_exists:
-        writer.writerow(["epochs", "batch_size", "learning_rate", "loss_train", "accuracy_train", "error_train", "loss_test", "accuracy_test", "error_test", "activation", "kernel_initializer", "patience", "early_stop"])
-    writer.writerow([epochs_g, batch_size_g, learning_rate_g, loss_train, accuracy_train * 100, error_train, loss_test, accuracy_test * 100, error_test, activation_g, kernel_initializer_g, patience_g, early_stop])
-
-model.save('model_simple_2.h5')
 
 print(f"Tasa de error en el conjunto de prueba: {error_test:.2f}%")
 print(f"Tasa de error en el conjunto de entrenamiento: {error_train:.2f}%")
