@@ -1,0 +1,14 @@
+# Ignorar entornos virtuales
+myenv/
+
+# Ignorar archivos de TensorFlow o dependencias grandes
+*.dll
+*.pyd
+
+# Ignorar cachés de Python
+__pycache__/
+*.pyc
+
+# Ignorar archivos de configuración de sistemas operativos
+.DS_Store
+Thumbs.db
